@@ -1,0 +1,1041 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Revenue Flow Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0D1117;--bg2:#111820;
+  --card:#161B22;--card2:#1C2430;--card-hover:#1e2a38;
+  --primary:#00D4AA;--primary-dim:rgba(0,212,170,.12);--primary-glow:rgba(0,212,170,.08);
+  --secondary:#8B5CF6;--secondary-dim:rgba(139,92,246,.12);
+  --text:#F0F0F0;--text2:#8B949E;--text3:#586069;
+  --danger:#F85149;--danger-dim:rgba(248,81,73,.12);
+  --warn:#D29922;--warn-dim:rgba(210,153,34,.12);
+  --success:#3FB950;
+  --border:rgba(255,255,255,.07);--border2:rgba(255,255,255,.04);
+  --radius:12px;--gap:16px;
+  --sidebar-w:180px;
+}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;font-size:13px;overflow:hidden}
+.app{display:flex;height:100vh}
+
+/* ── NAV SIDEBAR ── */
+.nav-rail{
+  width:52px;background:var(--card);border-right:1px solid var(--border);
+  display:flex;flex-direction:column;align-items:center;padding:18px 0;gap:4px;flex-shrink:0;z-index:10;
+}
+.logo{
+  width:34px;height:34px;border-radius:9px;
+  background:linear-gradient(135deg,var(--primary),var(--secondary));
+  display:flex;align-items:center;justify-content:center;
+  font-size:13px;font-weight:900;color:#fff;margin-bottom:22px;letter-spacing:-1px;
+}
+.nav-btn{
+  width:40px;height:40px;border-radius:9px;display:flex;align-items:center;justify-content:center;
+  cursor:pointer;transition:all .15s;color:var(--text2);position:relative;
+}
+.nav-btn:hover{background:var(--primary-dim);color:var(--primary)}
+.nav-btn.active{background:var(--primary-dim);color:var(--primary)}
+.nav-btn.active::before{
+  content:'';position:absolute;left:-1px;top:50%;transform:translateY(-50%);
+  width:3px;height:22px;background:var(--primary);border-radius:0 3px 3px 0;
+}
+.nav-btn svg{width:18px;height:18px}
+.nav-spacer{flex:1}
+
+/* ── MAIN ── */
+.main{flex:1;overflow:hidden;display:flex;flex-direction:column;min-width:0}
+
+/* ── TOPBAR ── */
+.topbar{
+  height:52px;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;padding:0 20px;gap:12px;flex-shrink:0;background:var(--card);
+}
+.topbar-title{font-size:14px;font-weight:700;flex:1}
+.topbar-sub{font-size:11px;color:var(--text2);margin-left:4px;font-weight:400}
+.live-dot{width:6px;height:6px;border-radius:50%;background:var(--success);animation:pulse 2s infinite}
+.live-badge{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--success);font-weight:500}
+.topbar-time{color:var(--text2);font-size:11px;font-variant-numeric:tabular-nums}
+.topbar-user{
+  width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,var(--secondary),#6d28d9);
+  display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff;
+}
+
+/* ── SCREENS ── */
+.screen{display:none;flex:1;overflow:hidden}
+.screen.active{display:flex}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.screen.active{animation:fadeIn .2s ease forwards}
+
+/* scrollbar */
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,.08);border-radius:3px}
+
+/* ── CARD ── */
+.card{
+  background:var(--card);border:1px solid var(--border);border-radius:var(--radius);
+  transition:all .2s;
+}
+.card:hover{background:var(--card-hover);border-color:rgba(255,255,255,.1);box-shadow:0 8px 32px rgba(0,0,0,.4);transform:translateY(-1px)}
+.section-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--text2)}
+
+/* ════════════════════════════════════
+   SCREEN 1 — GERENCIAL
+════════════════════════════════════ */
+.s1{flex-direction:column;overflow-y:auto;padding:18px 20px;gap:var(--gap)}
+
+.s1-top{display:grid;grid-template-columns:1.5fr 1fr .7fr;gap:var(--gap)}
+.s1-mid{display:grid;grid-template-columns:1fr 1fr;gap:var(--gap)}
+
+.kpi-big-val{font-size:34px;font-weight:900;letter-spacing:-2px;color:var(--primary)}
+.kpi-meta-row{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px}
+.kpi-pct{font-size:18px;font-weight:700;color:var(--primary)}
+.progress-track{background:rgba(255,255,255,.06);border-radius:99px;height:7px;margin:10px 0 6px;overflow:hidden}
+.progress-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,var(--primary),#00ffcc);transition:width 1.2s ease}
+.card-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--text2);margin-bottom:10px}
+.card-sub{font-size:11px;color:var(--text2);margin-top:4px}
+
+.lb-row{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border2)}
+.lb-row:last-child{border:none}
+.lb-rank{width:18px;font-size:10px;font-weight:700;color:var(--text2);text-align:center}
+.lb-rank.r1{color:#FFD700}.lb-rank.r2{color:#C0C0C0}.lb-rank.r3{color:#CD7F32}
+.lb-name{flex:1;font-size:12px;font-weight:500}
+.lb-val{font-size:12px;font-weight:700;min-width:52px;text-align:right}
+.lb-bar-track{flex:1;background:rgba(255,255,255,.06);border-radius:99px;height:3px;max-width:80px}
+.lb-bar-fill{height:3px;border-radius:99px;background:linear-gradient(90deg,var(--primary),#00ffcc)}
+
+.lead-big{font-size:48px;font-weight:900;letter-spacing:-3px;line-height:1}
+
+.gauge-wrap{display:flex;flex-direction:column;align-items:center}
+.gauge-num-wrap{position:absolute;bottom:0;left:50%;transform:translateX(-50%);text-align:center}
+.gauge-num{font-size:22px;font-weight:900}
+.gauge-unit{font-size:9px;color:var(--text2)}
+.s1-footer{display:flex;align-items:center;justify-content:space-around;gap:24px;padding:16px 20px}
+
+.stat3{text-align:center}
+.stat3-val{font-size:18px;font-weight:800;letter-spacing:-1px}
+.stat3-label{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.6px;color:var(--text2);margin-top:2px}
+
+.badge{display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border-radius:99px;font-size:10px;font-weight:600}
+.badge-up{background:rgba(63,185,80,.15);color:var(--success)}
+.badge-dn{background:rgba(248,81,73,.15);color:var(--danger)}
+.badge-muted{background:rgba(139,92,246,.15);color:var(--secondary)}
+
+/* ════════════════════════════════════
+   SCREEN 2 — FUNIS
+════════════════════════════════════ */
+.s2{flex:1;overflow:hidden}
+.s2-inner{display:flex;height:100%;overflow:hidden}
+
+/* Left channel sidebar */
+.ch-sidebar{
+  width:var(--sidebar-w);background:var(--card);border-right:1px solid var(--border);
+  display:flex;flex-direction:column;padding:16px 0;flex-shrink:0;overflow-y:auto;
+}
+.ch-section-label{
+  font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px;
+  color:var(--text3);padding:0 14px;margin-bottom:8px;
+}
+.ch-item{
+  display:flex;align-items:center;gap:8px;padding:9px 14px;cursor:pointer;
+  transition:all .15s;border-left:2px solid transparent;
+  font-size:12px;font-weight:500;color:var(--text2);
+}
+.ch-item:hover{background:var(--primary-glow);color:var(--text)}
+.ch-item.active{
+  background:rgba(0,212,170,.08);color:var(--primary);
+  border-left-color:var(--primary);
+}
+.ch-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.ch-divider{height:1px;background:var(--border2);margin:12px 0}
+
+.metrics-section{padding:0}
+.metric-row{padding:7px 14px;display:flex;flex-direction:column;gap:4px}
+.metric-top{display:flex;justify-content:space-between;align-items:center}
+.metric-name{font-size:11px;color:var(--text2)}
+.metric-pct{font-size:11px;font-weight:700}
+.metric-bar-track{height:3px;background:rgba(255,255,255,.06);border-radius:99px;overflow:hidden}
+.metric-bar-fill{height:3px;border-radius:99px}
+
+/* Main funnel content */
+.s2-content{flex:1;overflow-y:auto;padding:18px 20px;display:flex;flex-direction:column;gap:var(--gap)}
+
+/* Channel header */
+.ch-header{display:flex;align-items:center;gap:14px}
+.ch-header-icon{
+  width:40px;height:40px;border-radius:10px;
+  background:var(--primary-dim);border:1px solid rgba(0,212,170,.3);
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+}
+.ch-header-icon .dot-inner{width:10px;height:10px;border-radius:50%;background:var(--primary)}
+.ch-header-info{flex:1}
+.ch-header-name{font-size:18px;font-weight:800;letter-spacing:-.5px}
+.ch-header-sub{font-size:12px;color:var(--text2);margin-top:2px}
+.period-pills{display:flex;gap:2px}
+.period-pill{
+  padding:6px 14px;border-radius:8px;cursor:pointer;font-size:11px;font-weight:600;
+  background:transparent;border:1px solid transparent;color:var(--text2);transition:all .15s;
+}
+.period-pill:hover{color:var(--text);border-color:rgba(0,212,170,.3)}
+.period-pill.active{background:transparent;color:var(--primary);border-color:var(--primary)}
+
+/* Funnel + table row */
+.s2-main{display:grid;grid-template-columns:1.2fr 1fr;gap:var(--gap)}
+
+/* ── VERTICAL CASCADE FUNNEL ── */
+.funnel-card{padding:20px 24px;display:flex;flex-direction:column;gap:0}
+.funnel-title{margin-bottom:18px}
+
+.funnel-stage-wrap{display:flex;flex-direction:column;align-items:center;width:100%}
+
+.funnel-bar-row{width:100%;display:flex;justify-content:center;margin:0}
+.funnel-bar{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:11px 14px;border-radius:8px;
+  background:rgba(0,212,170,.07);
+  border:1px solid rgba(0,212,170,.2);
+  border-left:3px solid var(--primary);
+  transition:all .2s;cursor:default;
+  min-height:42px;
+}
+.funnel-bar:hover{background:rgba(0,212,170,.12);border-color:rgba(0,212,170,.4)}
+.funnel-bar-label{font-size:13px;font-weight:600;color:var(--text)}
+.funnel-bar-vol{font-size:15px;font-weight:800;color:var(--primary);letter-spacing:-.5px}
+
+.funnel-conv-row{
+  display:flex;align-items:center;gap:6px;padding:6px 0;
+  font-size:11px;color:var(--text2);font-weight:500;
+}
+.funnel-conv-arrow{font-size:10px;color:var(--text3)}
+.conv-badge-funnel{
+  padding:2px 7px;border-radius:4px;font-size:10px;font-weight:700;
+}
+.conv-good{background:rgba(63,185,80,.15);color:var(--success)}
+.conv-warn{background:rgba(210,153,34,.15);color:var(--warn)}
+.conv-bad{background:rgba(248,81,73,.12);color:var(--danger)}
+
+/* Funnel summary */
+.funnel-summary{
+  display:grid;grid-template-columns:1fr 1fr 1fr;gap:1px;
+  background:var(--border);border-radius:10px;overflow:hidden;
+  margin-top:20px;border:1px solid var(--border);
+}
+.funnel-stat{background:var(--card2);padding:12px 14px;text-align:center}
+.funnel-stat-val{font-size:22px;font-weight:900;letter-spacing:-1px}
+.funnel-stat-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--text2);margin-top:3px}
+
+/* ── CONVERSION TABLE ── */
+.conv-table-card{padding:20px;display:flex;flex-direction:column;gap:16px}
+.conv-table{width:100%;border-collapse:collapse}
+.conv-table th{
+  font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;
+  color:var(--text2);padding:8px 8px;text-align:left;
+  border-bottom:1px solid var(--border);
+}
+.conv-table td{padding:10px 8px;font-size:12px;border-bottom:1px solid var(--border2)}
+.conv-table tr:last-child td{border-bottom:none}
+.conv-table tr:hover td{background:rgba(255,255,255,.02)}
+.conv-rate-badge{
+  display:inline-block;padding:2px 7px;border-radius:4px;
+  font-size:10px;font-weight:700;
+}
+
+/* Bottlenecks */
+.bottleneck-item{
+  display:flex;align-items:center;gap:10px;padding:10px 12px;
+  border-radius:8px;border:1px solid rgba(248,81,73,.2);
+  background:rgba(248,81,73,.05);
+}
+.bottleneck-dot{width:7px;height:7px;border-radius:50%;background:var(--danger);flex-shrink:0}
+.bottleneck-text{font-size:12px;color:var(--text2)}
+.bottleneck-text strong{color:var(--text);font-weight:600}
+.bottleneck-pct{color:var(--danger);font-weight:700}
+
+/* Comparative section */
+.comp-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:var(--gap)}
+.comp-card{padding:16px 18px;border-radius:var(--radius);background:var(--card);border:1px solid var(--border);transition:all .2s}
+.comp-card:hover{background:var(--card-hover);transform:translateY(-1px);box-shadow:0 6px 24px rgba(0,0,0,.3)}
+.comp-card-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--text2);margin-bottom:8px}
+.comp-card-val{font-size:26px;font-weight:900;letter-spacing:-1px}
+.comp-card-sub{font-size:11px;color:var(--text2);margin-top:4px}
+.comp-bar-wrap{margin-top:10px;height:4px;background:rgba(255,255,255,.06);border-radius:99px;overflow:hidden}
+.comp-bar{height:4px;border-radius:99px}
+
+/* ════════════════════════════════════
+   SCREEN 3 — VENDEDOR
+════════════════════════════════════ */
+.s3{flex-direction:column;overflow-y:auto;padding:18px 20px;gap:var(--gap)}
+
+.seller-sel{
+  background:var(--card);border:1px solid var(--border);color:var(--text);
+  padding:8px 32px 8px 12px;border-radius:8px;font-family:'Inter',sans-serif;
+  font-size:13px;font-weight:600;cursor:pointer;appearance:none;outline:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238B949E' stroke-width='2.5'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 10px center;transition:border-color .15s;
+}
+.seller-sel:hover,.seller-sel:focus{border-color:var(--primary)}
+
+.s3-grid{display:grid;grid-template-columns:1fr 1fr;gap:var(--gap)}
+.kpi-card{
+  background:var(--card);border:1px solid var(--border);border-radius:var(--radius);
+  padding:15px 16px;transition:all .2s;
+}
+.kpi-card:hover{background:var(--card-hover);transform:translateY(-1px);box-shadow:0 6px 20px rgba(0,0,0,.3)}
+.kpi-card.bd-danger{border-color:var(--danger)}
+.kpi-card.bd-warn{border-color:var(--warn)}
+.kpi-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--text2);margin-bottom:7px}
+.kpi-val{font-size:22px;font-weight:900;letter-spacing:-1px}
+.kpi-sub{font-size:11px;color:var(--text2);margin-top:4px}
+.kpi-bars{display:flex;flex-direction:column;gap:7px;margin-top:4px}
+.kpi-bar-row{display:flex;align-items:center;gap:7px;font-size:11px}
+.kpi-bar-lbl{width:70px;color:var(--text2);flex-shrink:0}
+.kpi-bar-track{flex:1;height:5px;background:rgba(255,255,255,.06);border-radius:99px;overflow:hidden}
+.kpi-bar-fill-p{height:5px;border-radius:99px;background:var(--primary)}
+.kpi-bar-fill-s{height:5px;border-radius:99px;background:var(--secondary)}
+.kpi-bar-amt{width:44px;text-align:right;font-weight:700;font-size:11px}
+
+.s3-bottom{display:grid;grid-template-columns:1fr 1.5fr 1fr;gap:var(--gap)}
+
+.mf-wrap{display:flex;flex-direction:column;gap:0}
+.mf-step{display:flex;align-items:center;gap:10px;padding:6px 0;position:relative}
+.mf-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.mf-stage{font-size:11px;font-weight:500;flex:1}
+.mf-pct{font-size:13px;font-weight:800}
+.mf-bar{margin:2px 0 6px 17px;height:3px;background:rgba(255,255,255,.06);border-radius:99px;overflow:hidden}
+.mf-bar-fill{height:3px;border-radius:99px}
+
+.legend{display:flex;flex-wrap:wrap;gap:7px;margin-top:10px;justify-content:center}
+.legend-item{display:flex;align-items:center;gap:4px;font-size:10px;color:var(--text2)}
+.legend-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+
+/* ── ANIMATIONS ── */
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- NAV RAIL -->
+  <nav class="nav-rail">
+    <div class="logo">RF</div>
+    <div class="nav-btn active" data-screen="s1" title="Gerencial / TV">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
+        <rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
+      </svg>
+    </div>
+    <div class="nav-btn" data-screen="s2" title="Funis de Venda">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
+      </svg>
+    </div>
+    <div class="nav-btn" data-screen="s3" title="Análise por Vendedor">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+        <circle cx="12" cy="7" r="4"/>
+      </svg>
+    </div>
+    <div class="nav-spacer"></div>
+    <div class="nav-btn" title="Configurações">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="3"/>
+        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+      </svg>
+    </div>
+  </nav>
+
+  <!-- MAIN -->
+  <div class="main">
+    <!-- TOPBAR -->
+    <div class="topbar">
+      <div class="topbar-title" id="topTitle">Visão Gerencial<span class="topbar-sub">· Abril 2025</span></div>
+      <div class="live-badge"><span class="live-dot"></span>Ao vivo</div>
+      <div class="topbar-time" id="clock">--:--</div>
+      <div class="topbar-user">AC</div>
+    </div>
+
+    <!-- ══════════════ SCREEN 1 — GERENCIAL ══════════════ -->
+    <div class="screen active s1" id="s1">
+
+      <!-- TOP ROW -->
+      <div class="s1-top">
+        <!-- Meta + Pace -->
+        <div class="card" style="padding:18px 20px">
+          <div class="card-label">Meta + Pace — Abril 2025</div>
+          <div class="kpi-meta-row">
+            <div>
+              <div style="font-size:10px;color:var(--text2);margin-bottom:2px">Realizado</div>
+              <div class="kpi-big-val">R$850k</div>
+            </div>
+            <div style="text-align:right">
+              <div style="font-size:10px;color:var(--text2);margin-bottom:2px">Meta</div>
+              <div style="font-size:16px;font-weight:700;color:var(--text2)">R$1.2M</div>
+            </div>
+          </div>
+          <div class="progress-track"><div class="progress-fill" style="width:71%"></div></div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+            <div class="card-sub">71% da meta atingida</div>
+            <div class="kpi-pct">71%</div>
+          </div>
+          <div style="height:1px;background:var(--border2);margin:8px 0"></div>
+          <div style="font-size:12px;margin-top:8px">
+            <span style="color:var(--text2)">Projeção no ritmo atual: </span>
+            <span style="color:var(--primary);font-weight:700">R$1.05M</span>
+            <span style="color:var(--text2)"> (87% da meta)</span>
+          </div>
+        </div>
+
+        <!-- Forecast -->
+        <div class="card" style="padding:18px 20px;display:flex;flex-direction:column">
+          <div class="card-label">Forecast da Equipe</div>
+          <div style="flex:1;min-height:100px;position:relative">
+            <canvas id="forecastChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Lead Indicator -->
+        <div class="card" style="padding:18px 20px;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center">
+          <div class="card-label">Lead Indicator</div>
+          <div class="lead-big">342</div>
+          <div style="margin-top:8px"><span class="badge badge-up">▲ +12% vs semana ant.</span></div>
+          <div class="card-sub" style="margin-top:6px">Leads ativos no pipeline</div>
+        </div>
+      </div>
+
+      <!-- MID ROW -->
+      <div class="s1-mid">
+        <!-- Leaderboard -->
+        <div class="card" style="padding:18px 20px">
+          <div class="card-label">Ranking de Vendedores</div>
+          <div id="lb"></div>
+        </div>
+        <!-- Donut canal -->
+        <div class="card" style="padding:18px 20px">
+          <div class="card-label">Receita por Canal</div>
+          <div style="position:relative;height:180px">
+            <canvas id="canalDonut"></canvas>
+          </div>
+          <div class="legend" id="canalLegend"></div>
+        </div>
+      </div>
+
+      <!-- FOOTER -->
+      <div class="card s1-footer">
+        <div class="gauge-wrap">
+          <div class="card-label" style="margin-bottom:6px;text-align:center">Índice Confiança CRM</div>
+          <div style="position:relative">
+            <canvas id="gaugeMain" width="180" height="100"></canvas>
+            <div class="gauge-num-wrap"><div class="gauge-num" style="color:var(--success)">78</div><div class="gauge-unit">/ 100</div></div>
+          </div>
+          <div class="card-sub" style="margin-top:4px">Última sync: 14:00</div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:24px">
+          <div class="stat3"><div class="stat3-val">127</div><div class="stat3-label">Deals Ativos</div><div style="margin-top:4px"><span class="badge badge-up">+8 semana</span></div></div>
+          <div class="stat3"><div class="stat3-val">24<span style="font-size:14px;font-weight:400;color:var(--text2)">d</span></div><div class="stat3-label">Ciclo Médio</div><div style="margin-top:4px"><span class="badge badge-up">▼ 2d</span></div></div>
+          <div class="stat3"><div class="stat3-val" style="color:var(--primary)">28%</div><div class="stat3-label">Taxa Win</div><div style="margin-top:4px"><span class="badge badge-up">▲ +3pp</span></div></div>
+        </div>
+        <div style="text-align:center">
+          <div class="card-label">Revenue Hoje</div>
+          <div style="font-size:20px;font-weight:800;color:var(--primary)">R$42.8k</div>
+          <div class="card-sub">meta diária: R$40k</div>
+        </div>
+      </div>
+
+    </div><!-- /s1 -->
+
+    <!-- ══════════════ SCREEN 2 — FUNIS ══════════════ -->
+    <div class="screen s2" id="s2">
+      <div class="s2-inner">
+
+        <!-- Channel sidebar -->
+        <div class="ch-sidebar">
+          <div class="ch-section-label">Canais</div>
+
+          <div class="ch-item active" data-ch="inbound">
+            <span class="ch-dot" style="background:var(--primary)"></span>Inbound
+          </div>
+          <div class="ch-item" data-ch="outbound">
+            <span class="ch-dot" style="background:var(--secondary)"></span>Outbound
+          </div>
+          <div class="ch-item" data-ch="parceiros">
+            <span class="ch-dot" style="background:#D29922"></span>Parceiros
+          </div>
+          <div class="ch-item" data-ch="renovacoes">
+            <span class="ch-dot" style="background:#F85149"></span>Renovações
+          </div>
+
+          <div class="ch-divider"></div>
+          <div class="ch-section-label" style="padding:0 14px;margin-bottom:10px">Métricas Rápidas</div>
+          <div class="metrics-section" id="metricsSection"></div>
+        </div>
+
+        <!-- Funnel content -->
+        <div class="s2-content">
+
+          <!-- Channel header + period -->
+          <div style="display:flex;align-items:center;gap:16px">
+            <div class="ch-header" style="flex:1">
+              <div class="ch-header-icon" id="chIcon">
+                <div class="dot-inner"></div>
+              </div>
+              <div class="ch-header-info">
+                <div class="ch-header-name" id="chName">Funil Inbound</div>
+                <div class="ch-header-sub" id="chSub">1.240 entradas → 52 fechados</div>
+              </div>
+            </div>
+            <div class="period-pills">
+              <div class="period-pill" data-period="week">Esta semana</div>
+              <div class="period-pill active" data-period="month">Este mês</div>
+              <div class="period-pill" data-period="quarter">Último trimestre</div>
+              <div class="period-pill" data-period="year">Este ano</div>
+            </div>
+          </div>
+
+          <!-- Funnel + Table -->
+          <div class="s2-main">
+
+            <!-- CASCADE FUNNEL -->
+            <div class="card funnel-card">
+              <div class="section-label funnel-title">Visualização do Funil</div>
+              <div class="funnel-stage-wrap" id="funnelViz"></div>
+              <div class="funnel-summary" id="funnelSummary"></div>
+            </div>
+
+            <!-- Conversion table + bottlenecks -->
+            <div class="card conv-table-card">
+              <div class="section-label">Tabela de Conversão por Etapa</div>
+              <table class="conv-table">
+                <thead>
+                  <tr>
+                    <th>Etapa</th>
+                    <th>Entrada</th>
+                    <th>Saída</th>
+                    <th>Conversão</th>
+                    <th>Tempo Médio</th>
+                  </tr>
+                </thead>
+                <tbody id="convTableBody"></tbody>
+              </table>
+
+              <div style="margin-top:4px">
+                <div class="section-label" style="margin-bottom:10px">Gargalos Identificados</div>
+                <div style="display:flex;flex-direction:column;gap:8px" id="bottlenecks"></div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Comparativo section -->
+          <div>
+            <div class="section-label" style="margin-bottom:12px">Comparativo de Conversão Total por Canal</div>
+            <div class="comp-grid" id="compGrid"></div>
+          </div>
+
+        </div><!-- /s2-content -->
+      </div>
+    </div><!-- /s2 -->
+
+    <!-- ══════════════ SCREEN 3 — VENDEDOR ══════════════ -->
+    <div class="screen s3" id="s3">
+
+      <div style="display:flex;align-items:center;gap:14px">
+        <select class="seller-sel" id="sellerSel">
+          <option>Ana Silva</option><option>Bruno Costa</option><option>Carla Mendes</option>
+          <option>Diego Rocha</option><option>Erika Santos</option><option>Felipe Lima</option>
+          <option>Gabriela Nunes</option><option>Henrique Dias</option>
+        </select>
+        <div style="font-size:12px;color:var(--text2)">Vendedor selecionado · dados do mês atual</div>
+        <div style="flex:1"></div>
+        <div class="live-badge"><span class="live-dot"></span>Dados atualizados</div>
+      </div>
+
+      <!-- KPI grid 2 col x 6 row -->
+      <div class="s3-grid">
+        <div class="kpi-card">
+          <div class="kpi-label">⚡ Tempo Primeiro Contato</div>
+          <div class="kpi-val">12 <span style="font-size:14px;font-weight:400;color:var(--text2)">min</span></div>
+          <div class="kpi-sub">Meta &lt;15min &nbsp;<span class="badge badge-up">✓ Dentro</span></div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">📊 Média Atividades / Deal</div>
+          <div class="kpi-val">8.4</div>
+          <div class="kpi-sub">Benchmark: 7.9 &nbsp;<span class="badge badge-up">▲ +0.5</span></div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">💰 TKM Apresentado</div>
+          <div class="kpi-val" style="color:var(--primary)">R$18.5k</div>
+          <div class="kpi-sub">vs R$16.2k mês ant. &nbsp;<span class="badge badge-up">▲ +14%</span></div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">🔀 Taxa de Passagem Geral</div>
+          <div class="kpi-val">28%</div>
+          <div class="kpi-sub">Lead → Ganho &nbsp;<span class="badge badge-muted">⬛ Mediana</span></div>
+        </div>
+        <div class="kpi-card" style="grid-column:span 2">
+          <div class="kpi-label">📈 Forecast vs Realizado</div>
+          <div class="kpi-bars">
+            <div class="kpi-bar-row">
+              <div class="kpi-bar-lbl" style="color:var(--primary)">Projetado</div>
+              <div class="kpi-bar-track"><div class="kpi-bar-fill-p" style="width:100%"></div></div>
+              <div class="kpi-bar-amt" style="color:var(--primary)">R$320k</div>
+            </div>
+            <div class="kpi-bar-row">
+              <div class="kpi-bar-lbl" style="color:var(--secondary)">Realizado</div>
+              <div class="kpi-bar-track"><div class="kpi-bar-fill-s" style="width:89%"></div></div>
+              <div class="kpi-bar-amt" style="color:var(--secondary)">R$285k</div>
+            </div>
+          </div>
+          <div class="kpi-sub" style="margin-top:8px">89% do forecast atingido — 11 dias úteis restantes</div>
+        </div>
+        <div class="kpi-card bd-danger">
+          <div class="kpi-label" style="color:var(--danger)">🔴 Deals sem atividade</div>
+          <div class="kpi-val" style="color:var(--danger)">3</div>
+          <div class="kpi-sub">Último contato &gt; 7 dias</div>
+        </div>
+        <div class="kpi-card bd-danger">
+          <div class="kpi-label" style="color:var(--danger)">🔴 Deals acima do ciclo</div>
+          <div class="kpi-val" style="color:var(--danger)">5</div>
+          <div class="kpi-sub">Acima de 30 dias no funil</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">⏱ Ciclo de Venda</div>
+          <div class="kpi-val">22 <span style="font-size:14px;font-weight:400;color:var(--text2)">dias</span></div>
+          <div class="kpi-sub">Benchmark: 24d &nbsp;<span class="badge badge-up">▼ -2d</span></div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">🏃 Atividades / Dia</div>
+          <div class="kpi-val">14</div>
+          <div class="kpi-sub">Meta 12/dia &nbsp;<span class="badge badge-up">▲ Acima</span></div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">❌ Ciclo de Perda</div>
+          <div class="kpi-val">18 <span style="font-size:14px;font-weight:400;color:var(--text2)">dias</span></div>
+          <div class="kpi-sub">Média para desqualificar</div>
+        </div>
+        <div class="kpi-card bd-warn">
+          <div class="kpi-label" style="color:var(--warn)">🟡 Sem atualização</div>
+          <div class="kpi-val" style="color:var(--warn)">4</div>
+          <div class="kpi-sub">Stage sem mudança &gt;3 dias</div>
+        </div>
+      </div>
+
+      <!-- Bottom row -->
+      <div class="s3-bottom">
+
+        <!-- Mini funnel vertical -->
+        <div class="card" style="padding:18px 20px">
+          <div class="card-label" style="margin-bottom:12px">Taxas de Passagem por Etapa</div>
+          <div class="mf-wrap" id="miniFunnel"></div>
+        </div>
+
+        <!-- Loss donut -->
+        <div class="card" style="padding:18px 20px;display:flex;flex-direction:column;align-items:center">
+          <div class="card-label" style="align-self:flex-start;margin-bottom:12px">Motivos de Perda</div>
+          <div style="position:relative;height:160px;width:160px">
+            <canvas id="lossDonut"></canvas>
+          </div>
+          <div class="legend" id="lossLegend"></div>
+        </div>
+
+        <!-- Gauge confiança -->
+        <div class="card" style="padding:18px 20px;display:flex;flex-direction:column;align-items:center;justify-content:center">
+          <div class="card-label" style="margin-bottom:8px">Índice de Confiança</div>
+          <div style="position:relative">
+            <canvas id="gaugeSeller" width="170" height="95"></canvas>
+            <div class="gauge-num-wrap"><div class="gauge-num" style="color:var(--warn)">64</div><div class="gauge-unit">/ 100</div></div>
+          </div>
+          <div class="card-sub" style="margin-top:6px;text-align:center">Atenção: dados do CRM<br>precisam de atualização</div>
+        </div>
+
+      </div>
+    </div><!-- /s3 -->
+
+  </div><!-- /main -->
+</div><!-- /app -->
+
+<script>
+// ════════════════════════════════════════
+// DATA
+// ════════════════════════════════════════
+const sellers = [
+  {name:'Ana Silva',    rev:285000,pct:89},{name:'Bruno Costa',   rev:241000,pct:75},
+  {name:'Carla Mendes', rev:198000,pct:62},{name:'Diego Rocha',   rev:178000,pct:56},
+  {name:'Erika Santos', rev:163000,pct:51},{name:'Felipe Lima',   rev:142000,pct:44},
+  {name:'Gabriela Nunes',rev:118000,pct:37},{name:'Henrique Dias', rev:94000,pct:29},
+];
+
+const channelData = {
+  inbound:{
+    name:'Funil Inbound', color:'#00D4AA',
+    sub:'1.240 entradas → 52 fechados',
+    stages:[
+      {label:'Leads',     vol:1240},
+      {label:'MQLs',      vol:620,  conv:50, days:3},
+      {label:'SQLs',      vol:310,  conv:50, days:5},
+      {label:'Propostas', vol:155,  conv:50, days:7},
+      {label:'Negociação',vol:89,   conv:57, days:12},
+      {label:'Fechados',  vol:52,   conv:58, days:8},
+    ],
+    bottlenecks:[
+      {from:'Leads → MQLs', pct:50},
+      {from:'MQLs → SQLs', pct:50},
+    ],
+    compPct:4.2, totalIn:1240, closed:52,
+  },
+  outbound:{
+    name:'Funil Outbound', color:'#8B5CF6',
+    sub:'800 entradas → 28 fechados',
+    stages:[
+      {label:'Cadência',  vol:800},
+      {label:'Contato',   vol:360,  conv:45, days:2},
+      {label:'Reunião',   vol:180,  conv:50, days:4},
+      {label:'Proposta',  vol:90,   conv:50, days:6},
+      {label:'Negociação',vol:51,   conv:57, days:10},
+      {label:'Fechados',  vol:28,   conv:55, days:7},
+    ],
+    bottlenecks:[
+      {from:'Cadência → Contato', pct:45},
+    ],
+    compPct:3.5, totalIn:800, closed:28,
+  },
+  parceiros:{
+    name:'Funil Parceiros', color:'#D29922',
+    sub:'480 entradas → 66 fechados',
+    stages:[
+      {label:'Indicações', vol:480},
+      {label:'Contato',    vol:336,  conv:70, days:1},
+      {label:'Reunião',    vol:201,  conv:60, days:3},
+      {label:'Proposta',   vol:120,  conv:60, days:5},
+      {label:'Negociação', vol:88,   conv:73, days:8},
+      {label:'Fechados',   vol:66,   conv:75, days:4},
+    ],
+    bottlenecks:[],
+    compPct:13.8, totalIn:480, closed:66,
+  },
+  renovacoes:{
+    name:'Funil Renovações', color:'#F85149',
+    sub:'340 entradas → 128 fechados',
+    stages:[
+      {label:'Base Ativa', vol:340},
+      {label:'Mapeados',   vol:272,  conv:80, days:2},
+      {label:'Abordados',  vol:204,  conv:75, days:3},
+      {label:'Proposta',   vol:162,  conv:79, days:4},
+      {label:'Negociação', vol:140,  conv:86, days:6},
+      {label:'Renovados',  vol:128,  conv:91, days:3},
+    ],
+    bottlenecks:[],
+    compPct:37.6, totalIn:340, closed:128,
+  },
+};
+
+const metricsData = [
+  {key:'inbound',   label:'Inbound',    pct:4.2,  color:'#00D4AA'},
+  {key:'outbound',  label:'Outbound',   pct:3.5,  color:'#8B5CF6'},
+  {key:'parceiros', label:'Parceiros',  pct:13.8, color:'#D29922'},
+  {key:'renovacoes',label:'Renovações', pct:37.6, color:'#F85149'},
+];
+
+// ════════════════════════════════════════
+// NAVIGATION
+// ════════════════════════════════════════
+const titles = {s1:'Visão Gerencial',s2:'Funis de Venda',s3:'Análise por Vendedor'};
+const subtitles = {s1:'· Abril 2025',s2:'· Análise de conversão por canal',s3:'· Desempenho individual'};
+
+document.querySelectorAll('.nav-btn[data-screen]').forEach(el => {
+  el.addEventListener('click', () => {
+    const id = el.dataset.screen;
+    document.querySelectorAll('.nav-btn').forEach(n => n.classList.remove('active'));
+    el.classList.add('active');
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    document.getElementById('topTitle').innerHTML = titles[id] + `<span class="topbar-sub">${subtitles[id]}</span>`;
+  });
+});
+
+// Clock
+function tick() {
+  const n = new Date();
+  document.getElementById('clock').textContent =
+    n.getHours().toString().padStart(2,'0') + ':' + n.getMinutes().toString().padStart(2,'0');
+}
+tick(); setInterval(tick, 15000);
+
+// ════════════════════════════════════════
+// SCREEN 1
+// ════════════════════════════════════════
+// Forecast
+new Chart(document.getElementById('forecastChart'), {
+  type:'bar',
+  data:{
+    labels:[''],
+    datasets:[
+      {label:'Projetado',data:[1100000],backgroundColor:'rgba(0,212,170,.75)',borderRadius:6,borderSkipped:false},
+      {label:'Realizado', data:[850000], backgroundColor:'rgba(139,92,246,.75)',borderRadius:6,borderSkipped:false},
+    ]
+  },
+  options:{
+    responsive:true,maintainAspectRatio:false,
+    plugins:{
+      legend:{position:'bottom',labels:{color:'#8B949E',font:{family:'Inter',size:10},boxWidth:9,padding:10}},
+      tooltip:{callbacks:{label:c=>' R$'+(c.raw/1000).toFixed(0)+'k'}}
+    },
+    scales:{
+      x:{grid:{display:false},ticks:{display:false},border:{display:false}},
+      y:{grid:{color:'rgba(255,255,255,.04)'},border:{display:false},
+         ticks:{color:'#8B949E',font:{size:9},callback:v=>'R$'+(v/1000)+'k'}}
+    }
+  }
+});
+
+// Donut canal
+const cColors=['#00D4AA','#8B5CF6','#00B4D8','#E040FB','#F72585','#06D6A0'];
+const cLabels=['Inbound','Outbound','SEO','Parceiros','Email','Social'];
+const cVals  =[280,190,140,98,82,60];
+new Chart(document.getElementById('canalDonut'),{
+  type:'doughnut',
+  data:{labels:cLabels,datasets:[{data:cVals,backgroundColor:cColors,borderWidth:2,borderColor:'#161B22',hoverOffset:5}]},
+  options:{responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>' R$'+c.raw+'k'}}},cutout:'68%'}
+});
+const lg=document.getElementById('canalLegend');
+cLabels.forEach((l,i)=>{
+  const d=document.createElement('div');d.className='legend-item';
+  d.innerHTML=`<span class="legend-dot" style="background:${cColors[i]}"></span>${l}`;lg.appendChild(d);
+});
+
+// Leaderboard
+const lb=document.getElementById('lb');
+sellers.forEach((s,i)=>{
+  const rc=i===0?'r1':i===1?'r2':i===2?'r3':'';
+  lb.innerHTML+=`<div class="lb-row">
+    <div class="lb-rank ${rc}">${i+1}</div>
+    <div class="lb-name">${s.name}</div>
+    <div style="flex:1;padding:0 8px;max-width:90px">
+      <div class="lb-bar-track"><div class="lb-bar-fill" style="width:${s.pct}%"></div></div>
+    </div>
+    <div class="lb-val">R$${(s.rev/1000).toFixed(0)}k</div>
+  </div>`;
+});
+
+// Gauges
+function drawGauge(id,val,max,color,w,h){
+  const c=document.getElementById(id);if(!c)return;
+  const ctx=c.getContext('2d'),cx=w/2,cy=h-8,r=Math.min(w,h*2)/2-14;
+  ctx.clearRect(0,0,w,h);
+  ctx.beginPath();ctx.arc(cx,cy,r,Math.PI,0);
+  ctx.strokeStyle='rgba(255,255,255,.07)';ctx.lineWidth=12;ctx.lineCap='round';ctx.stroke();
+  ctx.beginPath();ctx.arc(cx,cy,r,Math.PI,Math.PI+(val/max)*Math.PI);
+  ctx.strokeStyle=color;ctx.lineWidth=12;ctx.lineCap='round';ctx.stroke();
+}
+drawGauge('gaugeMain',78,100,'#3FB950',180,100);
+drawGauge('gaugeSeller',64,100,'#D29922',170,95);
+
+// ════════════════════════════════════════
+// SCREEN 2 — FUNNEL
+// ════════════════════════════════════════
+let activeChannel = 'inbound';
+
+// Build metrics sidebar
+const msEl = document.getElementById('metricsSection');
+metricsData.forEach(m => {
+  msEl.innerHTML += `<div class="metric-row">
+    <div class="metric-top">
+      <span class="metric-name">${m.label}</span>
+      <span class="metric-pct" style="color:${m.color}">${m.pct}%</span>
+    </div>
+    <div class="metric-bar-track">
+      <div class="metric-bar-fill" style="width:${Math.min(m.pct*2,100)}%;background:${m.color}"></div>
+    </div>
+  </div>`;
+});
+
+function getConvClass(pct) {
+  if(pct >= 60) return 'conv-good';
+  if(pct >= 40) return 'conv-warn';
+  return 'conv-bad';
+}
+
+function buildFunnel(key) {
+  const d = channelData[key];
+  const max = d.stages[0].vol;
+
+  // Update header
+  document.getElementById('chName').textContent = d.name;
+  document.getElementById('chSub').textContent = d.sub;
+  document.getElementById('chIcon').style.background = d.color + '20';
+  document.getElementById('chIcon').style.borderColor = d.color + '50';
+  document.getElementById('chIcon').querySelector('.dot-inner').style.background = d.color;
+
+  // Build vertical cascade funnel
+  const fv = document.getElementById('funnelViz');
+  fv.innerHTML = '';
+
+  d.stages.forEach((stage, i) => {
+    // Width formula: 35% + (vol/max) * 65%, giving min ~35% and max 100%
+    const widthPct = 35 + (stage.vol / max) * 65;
+
+    // Bar row
+    const barRow = document.createElement('div');
+    barRow.className = 'funnel-bar-row';
+    barRow.innerHTML = `
+      <div class="funnel-bar" style="width:${widthPct}%;border-left-color:${d.color}">
+        <span class="funnel-bar-label">${stage.label}</span>
+        <span class="funnel-bar-vol" style="color:${d.color}">${stage.vol.toLocaleString('pt-BR')}</span>
+      </div>`;
+    fv.appendChild(barRow);
+
+    // Conversion row (not after last)
+    if (i < d.stages.length - 1) {
+      const nextStage = d.stages[i + 1];
+      const convRow = document.createElement('div');
+      convRow.className = 'funnel-conv-row';
+      convRow.innerHTML = `
+        <span class="funnel-conv-arrow">↓</span>
+        <span class="${getConvClass(nextStage.conv)} conv-badge-funnel">${nextStage.conv}%</span>`;
+      fv.appendChild(convRow);
+    }
+  });
+
+  // Funnel summary
+  const total = d.totalIn;
+  const closed = d.closed;
+  const convTotal = ((closed / total) * 100).toFixed(1);
+  document.getElementById('funnelSummary').innerHTML = `
+    <div class="funnel-stat">
+      <div class="funnel-stat-val" style="color:var(--text)">${total.toLocaleString('pt-BR')}</div>
+      <div class="funnel-stat-label">Total Entrada</div>
+    </div>
+    <div class="funnel-stat">
+      <div class="funnel-stat-val" style="color:var(--primary)">${closed}</div>
+      <div class="funnel-stat-label">Fechados</div>
+    </div>
+    <div class="funnel-stat">
+      <div class="funnel-stat-val" style="color:${d.color}">${convTotal}%</div>
+      <div class="funnel-stat-label">Conv. Total</div>
+    </div>`;
+
+  // Conversion table
+  const tbody = document.getElementById('convTableBody');
+  tbody.innerHTML = '';
+  for (let i = 0; i < d.stages.length - 1; i++) {
+    const from = d.stages[i];
+    const to = d.stages[i + 1];
+    const cc = getConvClass(to.conv);
+    const bgMap = {
+      'conv-good':'rgba(63,185,80,.15)','conv-warn':'rgba(210,153,34,.15)','conv-bad':'rgba(248,81,73,.12)'
+    };
+    const clMap = {
+      'conv-good':'var(--success)','conv-warn':'var(--warn)','conv-bad':'var(--danger)'
+    };
+    tbody.innerHTML += `<tr>
+      <td style="font-weight:500">${from.label} → ${to.label}</td>
+      <td style="color:var(--text2)">${from.vol.toLocaleString('pt-BR')}</td>
+      <td style="color:var(--text2)">${to.vol.toLocaleString('pt-BR')}</td>
+      <td><span class="conv-rate-badge" style="background:${bgMap[cc]};color:${clMap[cc]}">${to.conv}%</span></td>
+      <td style="color:var(--text2)">${to.days} dias</td>
+    </tr>`;
+  }
+
+  // Bottlenecks
+  const bn = document.getElementById('bottlenecks');
+  bn.innerHTML = '';
+  if (d.bottlenecks.length === 0) {
+    bn.innerHTML = `<div style="font-size:12px;color:var(--success);display:flex;align-items:center;gap:6px">
+      <span>✓</span><span>Nenhum gargalo crítico identificado neste canal.</span></div>`;
+  } else {
+    d.bottlenecks.forEach(b => {
+      bn.innerHTML += `<div class="bottleneck-item">
+        <div class="bottleneck-dot"></div>
+        <div class="bottleneck-text">
+          <strong>${b.from}</strong> ·
+          <span class="bottleneck-pct">${b.pct}% conversão</span>
+          <span style="color:var(--text3);font-size:10px;margin-left:6px">Abaixo do benchmark de 55%</span>
+        </div>
+      </div>`;
+    });
+  }
+
+  // Comparative grid
+  const cg = document.getElementById('compGrid');
+  cg.innerHTML = '';
+  Object.entries(channelData).forEach(([k, ch]) => {
+    const isActive = k === key;
+    const convTotal2 = ((ch.closed / ch.totalIn) * 100).toFixed(1);
+    cg.innerHTML += `<div class="comp-card" style="${isActive ? `border-color:${ch.color};box-shadow:0 0 0 1px ${ch.color}30` : ''}">
+      <div class="comp-card-label">${ch.name.replace('Funil ','').toUpperCase()}</div>
+      <div class="comp-card-val" style="color:${ch.color}">${convTotal2}%</div>
+      <div class="comp-card-sub">Conv. total · ${ch.totalIn.toLocaleString('pt-BR')} entradas</div>
+      <div class="comp-bar-wrap">
+        <div class="comp-bar" style="width:${Math.min(ch.compPct*2.5,100)}%;background:${ch.color}"></div>
+      </div>
+    </div>`;
+  });
+}
+
+// Channel click
+document.querySelectorAll('.ch-item[data-ch]').forEach(el => {
+  el.addEventListener('click', () => {
+    document.querySelectorAll('.ch-item').forEach(c => c.classList.remove('active'));
+    el.classList.add('active');
+    activeChannel = el.dataset.ch;
+    buildFunnel(activeChannel);
+  });
+});
+
+// Period pills
+document.querySelectorAll('.period-pill').forEach(el => {
+  el.addEventListener('click', () => {
+    document.querySelectorAll('.period-pill').forEach(p => p.classList.remove('active'));
+    el.classList.add('active');
+  });
+});
+
+buildFunnel('inbound');
+
+// ════════════════════════════════════════
+// SCREEN 3
+// ════════════════════════════════════════
+// Mini funnel
+const mfData = [
+  {stage:'Lead',       pct:100, color:'#00D4AA'},
+  {stage:'Reunião',    pct:72,  color:'#00B4D8'},
+  {stage:'Proposta',   pct:45,  color:'#5B8AF6'},
+  {stage:'Negociação', pct:31,  color:'#8B5CF6'},
+  {stage:'Ganho',      pct:28,  color:'#3FB950'},
+];
+const mfEl = document.getElementById('miniFunnel');
+mfData.forEach(m => {
+  mfEl.innerHTML += `
+    <div class="mf-step">
+      <div class="mf-dot" style="background:${m.color}"></div>
+      <div class="mf-stage">${m.stage}</div>
+      <div class="mf-pct" style="color:${m.color}">${m.pct}%</div>
+    </div>
+    <div class="mf-bar">
+      <div class="mf-bar-fill" style="width:${m.pct}%;background:${m.color}"></div>
+    </div>`;
+});
+
+// Loss donut
+const lColors=['#F85149','#D29922','#8B5CF6','#586069'];
+const lLabels=['Preço','Timing','Concorrência','Sem Resposta'];
+new Chart(document.getElementById('lossDonut'),{
+  type:'doughnut',
+  data:{labels:lLabels,datasets:[{data:[38,24,22,16],backgroundColor:lColors,borderWidth:2,borderColor:'#161B22',hoverOffset:4}]},
+  options:{responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>' '+c.raw+'%'}}},cutout:'65%'}
+});
+const ll=document.getElementById('lossLegend');
+lLabels.forEach((l,i)=>{
+  const d=document.createElement('div');d.className='legend-item';
+  d.innerHTML=`<span class="legend-dot" style="background:${lColors[i]}"></span>${l}`;ll.appendChild(d);
+});
+</script>
+</body>
+</html>
